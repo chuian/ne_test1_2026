@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINT // OS 2026</title>
+    <style>
+        :root {
+            --neon-cyan: #00f2ff;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(0, 242, 255, 0.2);
+            --neon-pink: #ff00c8;
+            --vr-purple: #a020f0;
+            --hazard: #ff3c3c;
+        }
+
+        body {
+            background: #0a0a0c;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            transition: background 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        /* DYNAMIC RED TINT OVERLAY */
+        #hazard-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 20%, rgba(255, 0, 0, 0.6) 100%);
+            pointer-events: none;
+            z-index: 500;
+            opacity: 0;
+            transition: opacity 1s linear;
+        }
+
+        /* Sabotage Timer */
+        #timer-bar {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            padding: 15px;
+            background: rgba(255, 0, 0, 0.2);
+            border-bottom: 2px solid var(--hazard);
+            text-align: center;
+            font-family: monospace;
+            z-index: 1000;
+            color: var(--hazard);
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
+
+        #speed-alert {
+           position: fixed;
+            top: 45px; /* Inside the banner height */
+            right: 20px; /* Moves it to the right side */
+            color: #fff; /* White text stands out better on the red banner */
+            font-size: 0.8rem;
+            text-align: right;
+            font-weight: bold;
+            text-transform: uppercase;
+            z-index: 1001; /* Sits above the timer-bar */
+            display: none;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 1); /* Glow to ensure visibility */
+        }
+
+        /* System Glitch Animation */
+        @keyframes system-glitch {
+            0% { transform: translate(0); filter: hue-rotate(0deg); }
+            10% { transform: translate(-2px, 2px); }
+            20% { transform: translate(-5px, 0px); filter: hue-rotate(10deg); }
+            30% { transform: translate(5px, -2px); }
+            40% { transform: translate(-5px, -5px); }
+            50% { transform: translate(2px, 5px); filter: brightness(1.2); }
+            100% { transform: translate(0); }
+        }
+
+        .glitch-active { animation: system-glitch 0.2s infinite ease-in-out; }
+
+        /* Minotaur Popup */
+        #minotaur-popup {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000;
+            border: 3px solid var(--hazard);
+            padding: 30px;
+            z-index: 2000;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.8);
+            text-align: center;
+        }
+
+        .glitch-header {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+            margin-top: 80px;
+            z-index: 600;
+            position: relative;
+        }
+
+        .media-box {
+            position: relative;
+            margin: 25px auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            transition: transform 0.3s ease;
+        }
+
+        .standard-ratio { padding-bottom: 56.25%; height: 0; }
+        .portrait-ratio { width: 315px; height: 560px; }
+
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+        .qr-fix img {
+            object-fit: contain;
+            padding: 10px;
+            background: #fff;
+            width: 150px; height: 150px;
+            position: relative;
+            margin: 20px auto;
+        }
+
+        .input-group { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+
+        input {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+            width: 180px;
+            text-transform: lowercase;
+        }
+
+        button { background: #fff; color: #000; padding: 14px 28px; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+
+        .hint-btn { background: transparent; color: var(--neon-cyan); border: 1px solid var(--border); font-size: 0.7rem; margin-top: 10px; cursor: pointer; }
+        .hint-text { display: none; font-size: 0.8rem; color: gold; margin-top: 10px; font-style: italic; }
+        .locked-section { display: none; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 30px; animation: fadeIn 0.8s ease; }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 220px; margin: 20px auto; }
+        .key { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: white; padding: 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="hazard-overlay"></div>
+    <div id="timer-bar">SHERIDAN SYSTEM STABILITY: <span id="clock">20:00</span></div>
+    <div id="speed-alert">CRITICAL ERROR: COUNTDOWN SPEED INCREASED x<span id="multiplier-val">1</span></div>
+
+    <div id="minotaur-popup">
+        <h2 style="color: var(--hazard); margin-top: 0;">MINOTAUR DETECTED</h2>
+        <p>This is taking too long. Use the shortcut?</p>
+        <div class="input-group">
+            <button onclick="window.location.href='https://example.com/shortcut'" style="background: var(--hazard); color: #fff;">YES</button>
+            <button onclick="closePopup()">NO</button>
+        </div>
+    </div>
+
+    <div class="glass-card" id="main-card">
+        <div class="glitch-header">N_HT___<br>GLITCH 1 SYSTEM<br>__ES__AP_E__</div>
+        
+        <p style="font-size: 0.9rem;">Question: "What is the first letter of White vision's eyes color?"</p>
+        <div class="media-box standard-ratio">
+            <iframe src="https://www.youtube-nocookie.com/embed/ldoh71uNZmk" allowfullscreen></iframe>
+        </div>
+        <div class="input-group">
+            <input type="text" id="pass1" placeholder="?" maxlength="1" onkeydown="handleEnter(event, 1)">
+            <button onclick="unlock1()">INITIALIZE GOOO</button>
+        </div>
+        <button class="hint-btn" onclick="toggleHint('hint1')">NEED A HINT?</button>
+        <div id="hint1" class="hint-text">The sky is clear.</div>
+
+        <div id="section2" class="locked-section">
+            <h3 style="color: var(--neon-cyan);">IDENTITY VERIFIED</h3>
+            <p style="font-size: 0.9rem;">"Head to B14... Thank you Hero."</p>
+            <div class="input-group">
+                <input type="text" id="pass2" placeholder="..." maxlength="1" onkeydown="handleEnter(event, 2)">
+                <button onclick="unlock2()">VERIFY LETTER</button>
+            </div>
+            <button class="hint-btn" onclick="toggleHint('hint2')">NEED A HINT?</button>
+            <div id="hint2" class="hint-text">The end of the alphabet.</div>
+        </div>
+
+        <div id="section3" class="locked-section">
+            <h3 style="color: var(--neon-pink);">CLUE 1 POSTER LOCATED</h3>
+            <div class="media-box portrait-ratio">
+                <iframe src="https://www.youtube-nocookie.com/embed/YOUR_SHORT_ID" allowfullscreen></iframe>
+            </div>
+            <p style="font-size: 0.9rem;">Enter the 3rd letter on the Thrifting poster:</p>
+            <div class="input-group">
+                <input type="text" id="pass3" placeholder="letter..." maxlength="1" onkeydown="handleEnter(event, 3)">
+                <button onclick="unlock3()">ACCESS STREAM</button>
+            </div>
+        </div>
+
+        <div id="sectionAR" class="locked-section">
+            <h3 style="color: #00ff00;">SYSTEM 4: AR PROTOCOL</h3>
+            <div class="media-box standard-ratio" style="border-color: #00ff00;">
+                 <p style="color: #00ff00; padding-top: 20%;">[ SPLINE / AR FEED ACTIVE ]</p>
+            </div>
+            <div class="input-group">
+                <input type="text" id="passAR" placeholder="?" maxlength="1" onkeydown="handleEnter(event, 'AR')">
+                <button onclick="unlockAR()" style="background:#00ff00;">DECODE AR</button>
+            </div>
+        </div>
+
+        <div id="sectionVR" class="locked-section">
+            <h3 style="color: var(--vr-purple);">SYSTEM 5: VR SIMULATION</h3>
+            <div class="media-box qr-fix" style="border-color: var(--vr-purple); height: 200px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://your-vr-link.com" alt="VR QR">
+            </div>
+            <div class="input-group">
+                <input type="text" id="passVR" placeholder="color..." maxlength="1" onkeydown="handleEnter(event, 'VR')">
+                <button onclick="unlockVR()" style="background:var(--vr-purple); color:#fff;">PURGE VR</button>
+            </div>
+        </div>
+
+        <div id="section4" class="locked-section">
+            <h2 style="color: gold;">FINAL CHALLENGE</h2>
+            <p>HINT: "The cost of the item kimbap from the korean new shop"</p>
+            <div id="sequence-display" style="font-size: 1.5rem; letter-spacing: 5px; margin: 10px;">_ _ _</div>
+            <div class="keypad">
+                <button class="key" onclick="press(1)">1</button><button class="key" onclick="press(2)">2</button><button class="key" onclick="press(3)">3</button>
+                <button class="key" onclick="press(4)">4</button><button class="key" onclick="press(5)">5</button><button class="key" onclick="press(6)">6</button>
+                <button class="key" onclick="press(7)">7</button><button class="key" onclick="press(8)">8</button><button class="key" onclick="press(9)">9</button>
+                <button class="key" style="grid-column: span 3" onclick="resetKeypad()">CLEAR</button>
+            </div>
+        </div>
+
+        <div id="win-section" style="display: none; margin-top: 20px;">
+            <h2 style="color: #000; font-weight: 900;">MISSION ACCOMPLISHED</h2>
+            <p style="color: #000; font-weight: bold;">Well done in re-enaging sheridan system.</p>
+            <img src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmZyeXJ5eXJ5eXJ5eXJ5eXJ5eXJ5eXJ5eXJ5eXJ5eXJ5ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/nDSlfqf0gn5g4/giphy.gif" alt="Win" style="width: 100%; border-radius: 12px; border: 4px solid #000;">
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 1200; //20 mins
+        const maxTime = 1200;
+        let isActive = true;
+        let timerSpeed = 1000;
+        let currentMultiplier = 1;
+        let timerInstance;
+
+        function startTimer() {
+            clearInterval(timerInstance);
+            timerInstance = setInterval(() => {
+                if (!isActive) return;
+                timeLeft--;
+                updateDisplay();
+                applyEffects();
+                if (timeLeft <= 0) { alert("SYSTEM FOUND YOU.TERMINATE MEMORY."); location.reload(); }
+            }, timerSpeed);
+        }
+
+        function updateDisplay() {
+            let mins = Math.floor(timeLeft / 60);
+            let secs = timeLeft % 60;
+            document.getElementById('clock').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function applyEffects() {
+            // Apply Red Tint based on time decay
+            let redRatio = 1 - (timeLeft / maxTime);
+            document.getElementById('hazard-overlay').style.opacity = redRatio.toFixed(2);
+
+            // Trigger Glitches based on time thresholds
+            const card = document.getElementById('main-card');
+            const videos = document.querySelectorAll('.media-box');
+            
+            if (timeLeft < 75) { // 25% Time Left - Violent Glitch
+                card.classList.add('glitch-active');
+                videos.forEach(v => v.classList.add('glitch-active'));
+            } else if (timeLeft < 150) { // 50% Time Left - Mild Glitch
+                card.classList.add('glitch-active');
+            } else {
+                card.classList.remove('glitch-active');
+                videos.forEach(v => v.classList.remove('glitch-active'));
+            }
+        }
+
+        function penalize() {
+            currentMultiplier *= 2;
+            timerSpeed = 1000 / currentMultiplier;
+            
+            document.getElementById('speed-alert').style.display = 'block';
+            document.getElementById('multiplier-val').innerText = currentMultiplier;
+
+            timeLeft = Math.max(0, timeLeft - 10);
+            updateDisplay();
+            startTimer();
+
+            document.body.style.background = "#600";
+            setTimeout(() => { if(isActive) document.body.style.background = "#0a0a0c"; }, 200);
+        }
+
+        function closePopup() { document.getElementById('minotaur-popup').style.display = 'none'; }
+        
+        // Every 10 seconds show the Minotaur shortcut
+        setInterval(() => { if (isActive) document.getElementById('minotaur-popup').style.display = 'block'; }, 10000);
+
+        function handleEnter(e, s) { if (e.key === "Enter") { 
+            if (s === 1) unlock1(); if (s === 2) unlock2(); if (s === 3) unlock3(); 
+            if (s === 'AR') unlockAR(); if (s === 'VR') unlockVR(); 
+        } }
+
+        function unlock1() { 
+            if(document.getElementById('pass1').value.toLowerCase() === 'b') { document.getElementById('section2').style.display = 'block'; } 
+            else { penalize(); } 
+        }
+        function unlock2() { 
+            if(document.getElementById('pass2').value.toLowerCase() === 'z') { document.getElementById('section3').style.display = 'block'; } 
+            else { penalize(); } 
+        }
+        function unlock3() { 
+            if(document.getElementById('pass3').value.toLowerCase() === 'p') { document.getElementById('sectionAR').style.display = 'block'; } 
+            else { penalize(); } 
+        }
+        function unlockAR() { 
+            if(document.getElementById('passAR').value.toLowerCase() === 'm') { document.getElementById('sectionVR').style.display = 'block'; } 
+            else { penalize(); } 
+        }
+        function unlockVR() { 
+            if(document.getElementById('passVR').value.toLowerCase() === 'r') { document.getElementById('section4').style.display = 'block'; } 
+            else { penalize(); } 
+        }
+
+        let currentSequence = "";
+        function press(num) {
+            currentSequence += num;
+            document.getElementById('sequence-display').innerText = currentSequence;
+            if (currentSequence === "599") { triggerWin(); } 
+            else if (currentSequence.length >= 3) { penalize(); resetKeypad(); }
+        }
+        function resetKeypad() { currentSequence = ""; document.getElementById('sequence-display').innerText = "_ _ _"; }
+
+        function triggerWin() {
+            isActive = false;
+            clearInterval(timerInstance);
+            document.body.style.background = "#bdf0d2";
+            document.getElementById('timer-bar').style.display = 'none';
+            document.getElementById('speed-alert').style.display = 'none';
+            document.getElementById('hazard-overlay').style.opacity = '0';
+            document.getElementById('main-card').classList.remove('glitch-active');
+            document.getElementById('win-section').style.display = 'block';
+            document.querySelectorAll('.glitch-header, h2, h3, p, div').forEach(e => { e.style.color = "#000"; e.style.opacity = "1"; });
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function toggleHint(id) { let h = document.getElementById(id); h.style.display = (h.style.display === 'block') ? 'none' : 'block'; }
+
+        startTimer();
+    </script>
+</body>
+</html>
